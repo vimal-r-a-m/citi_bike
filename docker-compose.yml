@@ -1,5 +1,5 @@
 services:
-  posgres:
+  postgres:
     image: postgres:17
     container_name: citi_bike_postgres
     environment:

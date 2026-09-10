@@ -1,0 +1,6 @@
+data/raw/*
+data/extracted/*
+*.csv
+
+!data/raw/.gitkeep
+!data/extracted/.gitkeep
