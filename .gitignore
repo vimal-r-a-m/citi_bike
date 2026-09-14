@@ -4,3 +4,6 @@ data/extracted/*
 
 !data/raw/.gitkeep
 !data/extracted/.gitkeep
+
+citibike_dbt/target/
+__pycache__/
