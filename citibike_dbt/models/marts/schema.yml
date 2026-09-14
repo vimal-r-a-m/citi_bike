@@ -1,0 +1,27 @@
+# It is used for testing the tables built in the marts layer. It is not used for building the marts layer itself.
+version: 2
+
+models:
+  - name: dim_station
+    columns:
+      - name: station_id
+        tests:
+          - unique
+          - not_null
+          
+  - name: fact_trips
+    columns:
+      - name: ride_id
+        tests:
+          - unique
+          - not_null
+      - name: start_station_id
+        tests:
+          - relationships:            # Foreign key test
+              to: ref('dim_station')    
+              field: station_id
+      - name: end_station_id
+        tests:
+          - relationships:
+              to: ref('dim_station')
+              field: station_id
