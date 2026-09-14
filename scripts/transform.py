@@ -1,0 +1,87 @@
+import duckdb
+
+def get_minio_connection():
+    """
+    Establishes a connection to the MinIO server using DuckDB.
+
+    Returns:
+        duckdb.DuckDBPyConnection: A DuckDB connection object.
+    """
+    # Connect to DuckDB and creates in-memory database
+    con = duckdb.connect()
+
+    # Set the MinIO connection parameters and config the duckdb to use for s3 api compatibile storage
+    con.execute("""
+        SET s3_endpoint='localhost:9000';
+        SET s3_access_key_id='minioadmin';
+        SET s3_secret_access_key='minioadmin';
+        SET s3_url_style='path';
+        SET s3_use_ssl=false;        
+    """)
+        # s3_use_ssl=false cus we is  http for https for connection.
+    return con
+
+def inspect_schema(con, source_glob: str):
+    print(f"--- Schema for {source_glob} ---")
+    df = con.execute(f"DESCRIBE SELECT * FROM read_parquet('{source_glob}')").fetchdf()
+    print(df[['column_name', 'column_type']])
+
+
+def clean_trips(con, source_glob: str) -> None:
+    # Note: hive_partitioning=true pulls the 'region' column from the folder structure
+    con.execute(f"""
+        CREATE OR REPLACE TABLE trips_silver AS
+        SELECT
+            ride_id,
+            rideable_type,
+            started_at,
+            ended_at,
+            start_station_name,
+            CAST(start_station_id AS VARCHAR) AS start_station_id,
+            end_station_name,
+            CAST(end_station_id AS VARCHAR) AS end_station_id,
+            start_lat,
+            start_lng,
+            end_lat,
+            end_lng,
+            member_casual,
+            CASE 
+                WHEN UPPER(filename) LIKE '%JC%' THEN 'jc'
+                ELSE 'nyc'
+            END AS region
+        FROM read_csv_auto(
+            '{source_glob}',
+            union_by_name=true,
+            filename=true,
+            types={{'start_station_id': 'VARCHAR', 'end_station_id': 'VARCHAR'}}
+        )
+        WHERE started_at IS NOT NULL
+        AND ended_at IS NOT NULL
+        AND ended_at > started_at
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY ride_id ORDER BY started_at) = 1
+    """)    
+
+def write_silver(con):
+    con.execute("""
+        COPY trips_silver TO 's3://silver/citibike/'
+        (FORMAT PARQUET, PARTITION_BY (region), OVERWRITE_OR_IGNORE true)
+    """)
+
+if __name__ == "__main__":
+    con = get_minio_connection()
+    # Step B: Inspect to ensure JC and NYC match
+    # inspect_schema(con, 's3://bronze/citibike_extracted/2026/05/**')
+    
+    # Step D & F: Clean and Write
+    # print("Cleaning trips...")
+    # clean_trips(con, 's3://bronze/citibike_extracted/2026/05/**')
+    # print("Writing to Silver...")
+    # write_silver(con)
+    # print("Done.")
+
+    # inspect_schema(con, 's3://silver/citibike/**/*.parquet')
+    df = con.execute("""
+        SELECT *
+        FROM read_parquet('s3://silver/citibike/**/*.parquet')
+        limit 20""")
+    print(df.fetchdf()[['started_at', 'ended_at', 'start_station_id', 'start_station_name']])
