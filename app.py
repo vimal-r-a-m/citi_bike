@@ -1,16 +1,9 @@
 # app.py
 import streamlit as st
-import duckdb
 import plotly.express as px
+from utils.connect_minio import get_minio_connection
 
-con = duckdb.connect('citibike_dbt/warehouse.duckdb')
-con.execute("""
-        SET s3_endpoint='localhost:9000';
-        SET s3_access_key_id='minioadmin';
-        SET s3_secret_access_key='minioadmin';
-        SET s3_url_style='path';
-        SET s3_use_ssl=false;        
-    """)
+con = get_minio_connection('citibike_dbt/warehouse.duckdb')
 
 st.set_page_config(page_title="Citi Bike Analytics", layout="wide")
 st.title("🚲 Citi Bike Analytics")
