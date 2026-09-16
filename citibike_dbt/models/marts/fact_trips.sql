@@ -2,6 +2,8 @@ select
     ride_id,
     cast(started_at as date) as start_date_key,
     cast(ended_at as date) as end_date_key,
+    started_at,
+    ended_at,
     start_station_id,
     end_station_id,
     rideable_type,
