@@ -8,7 +8,7 @@ def inspect_schema(con, source_glob: str):
     print(df[['column_name', 'column_type']])
 
 
-def clean_trips(con, source_glob: str) -> None:
+def clean_trips(con, source_glob: str, source_month: str) -> None:
     # Note: hive_partitioning=true pulls the 'region' column from the folder structure
     con.execute(f"""
         CREATE OR REPLACE TABLE trips_silver AS
@@ -26,10 +26,9 @@ def clean_trips(con, source_glob: str) -> None:
             end_lat,
             end_lng,
             member_casual,
-            CASE 
-                WHEN UPPER(filename) LIKE '%JC%' THEN 'jc'
-                ELSE 'nyc'
-            END AS region
+            CASE WHEN filename LIKE '%JC%' THEN 'jc' ELSE 'nyc' END AS region,
+            strftime(started_at, '%Y%m') AS trip_month,   -- real calendar month, for analytics
+            '{source_month}' AS source_month              -- which ingestion run owns this write
         FROM read_csv_auto(
             '{source_glob}',
             union_by_name=true,
@@ -45,7 +44,7 @@ def clean_trips(con, source_glob: str) -> None:
 def write_silver(con):
     con.execute("""
         COPY trips_silver TO 's3://silver/citibike/'
-        (FORMAT PARQUET, PARTITION_BY (region), OVERWRITE_OR_IGNORE true)
+        (FORMAT PARQUET, PARTITION_BY (region, source_month), OVERWRITE_OR_IGNORE true)
     """)
 
 if __name__ == "__main__":
@@ -54,15 +53,8 @@ if __name__ == "__main__":
     # inspect_schema(con, 's3://bronze/citibike_extracted/2026/05/**')
     
     # Step D & F: Clean and Write
-    # print("Cleaning trips...")
-    # clean_trips(con, 's3://bronze/citibike_extracted/2026/05/**')
-    # print("Writing to Silver...")
-    # write_silver(con)
-    # print("Done.")
-
-    # inspect_schema(con, 's3://silver/citibike/**/*.parquet')
-    df = con.execute("""
-        SELECT *
-        FROM read_parquet('s3://silver/citibike/**/*.parquet')
-        limit 20""")
-    print(df.fetchdf()[['started_at', 'ended_at', 'start_station_id', 'start_station_name']])
+    print("Cleaning trips...")
+    clean_trips(con, 's3://bronze/citibike_extracted/2026/05/**', "202605")
+    print("Writing to Silver...")
+    write_silver(con)
+    print("Done.")
