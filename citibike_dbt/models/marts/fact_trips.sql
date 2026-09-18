@@ -9,5 +9,6 @@ select
     rideable_type,
     member_casual,
     region,
+    trip_month,
     date_diff('minute', started_at, ended_at) as duration_minutes
 from {{ ref('stg_trips') }}

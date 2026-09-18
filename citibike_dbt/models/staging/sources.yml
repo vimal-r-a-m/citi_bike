@@ -4,7 +4,7 @@ sources:
     tables:
       - name: trips
         meta:
-          external_location: "read_parquet('s3://silver/citibike/**/*.parquet')"
+          external_location: "read_parquet('s3://silver/citibike/**/*.parquet', hive_partitioning=true)"
 
 # This YAML is basically giving a friendly name to your data in MinIO so dbt can refer to it easily.
 # source = silver
