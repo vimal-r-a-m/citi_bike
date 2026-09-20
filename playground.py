@@ -58,11 +58,11 @@ con_silver = get_minio_connection()
 df = con_silver.execute("""
         SELECT 
             region, 
-            year_month, 
+            trip_month, 
             COUNT(*) AS trip_count
     FROM read_parquet('s3://silver/citibike/**/*.parquet', hive_partitioning=true, filename=true)
-    GROUP BY region, year_month
-    ORDER BY year_month, region;
+    GROUP BY region, trip_month
+    ORDER BY trip_month, region;
 """).fetchdf()
     
 print(df)
@@ -79,4 +79,28 @@ df_gold = con_gold.execute("""
     ORDER BY year_month, region;
 """).df()
 print(df_gold)
+
+
+## checking for overlap between the fact_trips and the station_rolling_availability table station_id's
+con_gold.execute("INSTALL postgres; LOAD postgres;")
+# Attach to the Postgres container (using port 5433 mapped to your host)
+con_gold.execute("ATTACH 'dbname=bikeshare user=warehouse password=warehouse host=localhost port=5433' AS livedb (TYPE postgres);")
+# sample a few IDs from each side, side by side
+live_sample = con.execute("SELECT DISTINCT station_id FROM livedb.station_rolling_availability LIMIT 10").fetchdf()
+batch_sample = con.execute("SELECT DISTINCT station_id FROM dim_station LIMIT 10").fetchdf()
+print("LIVE:\n", live_sample)
+print("BATCH:\n", batch_sample)
+
+## conclusion: No overlap
+
+import requests
+info = requests.get("https://gbfs.citibikenyc.com/gbfs/en/station_information.json").json()
+short_names = {s["short_name"] for s in info["data"]["stations"]}
+
+batch_ids = con_gold.execute("SELECT DISTINCT station_id FROM dim_station").fetchdf()["station_id"].tolist()
+
+overlap = set(batch_ids) & short_names
+print(f"{len(overlap)} of {len(batch_ids)} batch station_ids found in live short_name")
+
+
 

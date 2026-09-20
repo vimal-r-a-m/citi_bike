@@ -7,3 +7,6 @@ data/extracted/*
 
 citibike_dbt/target/
 __pycache__/
+logs/
+venv/
+tempCodeRunnerFile.py
