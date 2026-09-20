@@ -1,0 +1,5 @@
+FROM apache/spark:3.5.1
+# Switch to root to get installation permissions
+USER root
+RUN pip install --no-cache-dir psycopg2-binary
+USER spark

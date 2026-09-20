@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17
+    image: postgres:15
     container_name: citi_bike_postgres
     environment:
       - POSTGRES_USER=postgres
@@ -99,7 +99,72 @@ services:
       - ./logs:/opt/airflow/logs
     command: scheduler
 
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    container_name: redpanda
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=1G
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    ports:
+      - "9092:9092"
+
+  redpanda-console:
+    image: redpandadata/console:v2.7.2
+    container_name: redpanda-console
+    depends_on: [redpanda]
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "8081:8080"
+    
+  gbfs-producer:
+    container_name: gbfs-producer
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    depends_on: [redpanda]
+    restart: unless-stopped
+  
+  postgres-warehouse:
+    image: postgres:15
+    container_name: warehouse_postgres
+    environment:
+      POSTGRES_USER: warehouse
+      POSTGRES_PASSWORD: warehouse
+      POSTGRES_DB: bikeshare
+    ports:
+      - "5433:5432"
+    volumes:
+      - warehouse-db:/var/lib/postgresql/data
+  
+  spark:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: spark
+    depends_on: [redpanda, postgres-warehouse]
+    ports:
+      - "4040:4040" 
+    volumes:
+      - ./spark_jobs:/opt/spark_jobs
+    command: >
+      /opt/spark/bin/spark-submit
+      --conf spark.jars.ivy=/tmp/.ivy2
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,org.postgresql:postgresql:42.7.3
+      /opt/spark_jobs/station_status_stream.py
+
 volumes:
   postgres_data:
   minio_data:
   airflow-db:
+  redpanda-data:
+  warehouse-db:
