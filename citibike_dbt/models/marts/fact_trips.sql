@@ -1,3 +1,10 @@
+{{
+    config(
+        materialized='incremental',
+        unique_key=['ride_id']
+    )
+}}
+
 select
     ride_id,
     cast(started_at as date) as start_date_key,
@@ -12,3 +19,7 @@ select
     trip_month,
     date_diff('minute', started_at, ended_at) as duration_minutes
 from {{ ref('stg_trips') }}
+
+{% if is_incremental() %}
+WHERE trip_month > (SELECT MAX(trip_month) FROM {{ this }})
+{% endif %}
