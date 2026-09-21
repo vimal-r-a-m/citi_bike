@@ -1,16 +1,4 @@
-services:
-  postgres:
-    image: postgres:15
-    container_name: citi_bike_postgres
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=citi_bike
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-  
+services:  
   minio:
     image: minio/minio:latest
     container_name: citi_bike_minio
@@ -163,7 +151,6 @@ services:
       /opt/spark_jobs/station_status_stream.py
 
 volumes:
-  postgres_data:
   minio_data:
   airflow-db:
   redpanda-data:
