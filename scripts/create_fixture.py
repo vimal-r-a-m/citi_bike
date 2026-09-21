@@ -1,3 +1,9 @@
+"""Create a small Parquet fixture from the MinIO Silver layer for dbt tests.
+
+Run manually with ``python -m scripts.create_fixture``; the CI workflow uses
+the generated ``citibike_dbt/test_fixtures/sample_trips.parquet`` file.
+"""
+
 import os
 import duckdb
 # run python -m scripts.create_fixture

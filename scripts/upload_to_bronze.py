@@ -1,3 +1,9 @@
+"""Upload extracted trip CSV files to the MinIO bronze bucket.
+
+Used as a local/manual upload utility; the scheduled batch DAG uses
+``upload_to_minio.py`` instead.
+"""
+
 # The raw data of compressed file has been uploaded to the bronze layer already, by manually on CLI
 import boto3
 from pathlib import Path

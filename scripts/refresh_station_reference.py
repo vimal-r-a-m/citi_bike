@@ -1,3 +1,9 @@
+"""Refresh the PostgreSQL station-reference table from Citi Bike GBFS data.
+
+Used by ``dags/station_reference_dag.py`` on its daily schedule to maintain
+the mapping between GBFS station IDs and historical station names.
+"""
+
 import requests
 import psycopg2
 from psycopg2.extras import execute_values

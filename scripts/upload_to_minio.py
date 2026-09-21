@@ -1,3 +1,9 @@
+"""Upload downloaded and extracted trip files to the MinIO bronze layer.
+
+Used by ``dags/citibike_batch_dag.py`` between download/extraction and the
+Silver transformation step.
+"""
+
 import boto3
 import os
 import logging

@@ -1,3 +1,8 @@
+"""Download and extract monthly Citi Bike trip-data archives.
+
+Used by ``dags/citibike_batch_dag.py`` as the first step of the batch pipeline.
+"""
+
 import requests
 import zipfile
 import os

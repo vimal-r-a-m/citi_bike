@@ -1,3 +1,9 @@
+"""Extract ZIP archives from ``data/raw`` into ``data/extracted``.
+
+Used as a local/manual data-preparation utility before files are uploaded to
+the MinIO bronze bucket.
+"""
+
 import zipfile
 from pathlib import Path
 

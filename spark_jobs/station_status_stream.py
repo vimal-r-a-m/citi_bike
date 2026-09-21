@@ -1,3 +1,10 @@
+"""Aggregate live GBFS station-status events and upsert rolling metrics.
+
+Run as the Spark streaming job from ``docker-compose.yml``. It consumes the
+``gbfs_station_status`` Redpanda topic produced by
+``scripts/gbfs_producer.py`` and writes to PostgreSQL.
+"""
+
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col, window, avg, to_timestamp
 from pyspark.sql.types import StructType, StringType, IntegerType, LongType

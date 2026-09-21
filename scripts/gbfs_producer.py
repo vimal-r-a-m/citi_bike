@@ -1,3 +1,10 @@
+"""Poll Citi Bike GBFS station status and publish records to Redpanda.
+
+Run as the producer service defined in ``docker-compose.yml``; its
+``gbfs_station_status`` topic is consumed by
+``spark_jobs/station_status_stream.py``.
+"""
+
 """
 The poller for gbfs station status data. It fetches the data from the Citi Bike GBFS endpoint and publishes it to a Kafka topic.
 """

@@ -1,3 +1,9 @@
+"""Clean raw trip records with DuckDB and write the Silver Parquet layer.
+
+Used by ``dags/citibike_batch_dag.py`` after the bronze upload step and can
+also be run directly for a local transformation.
+"""
+
 import duckdb
 from utils.connect_minio import get_minio_connection
 

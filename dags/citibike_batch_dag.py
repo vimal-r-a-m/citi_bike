@@ -1,3 +1,10 @@
+"""Define the scheduled Citi Bike batch ingestion and dbt pipeline.
+
+Loaded by Airflow from the ``dags`` folder. It downloads monthly data,
+uploads the files to MinIO bronze, transforms them into Silver, and runs the
+dbt Gold models and tests.
+"""
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator

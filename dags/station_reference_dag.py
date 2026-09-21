@@ -1,3 +1,9 @@
+"""Define the daily Airflow DAG for refreshing station-reference metadata.
+
+Loaded by Airflow from the ``dags`` folder and calls
+``scripts.refresh_station_reference.refresh_station_reference``.
+"""
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime
