@@ -2,6 +2,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 from airflow.models.param import Param
+from dateutil.relativedelta import relativedelta
 from datetime import datetime
 import sys, duckdb
 
@@ -13,24 +14,34 @@ from scripts.transform import clean_trips, write_silver
 default_args = {"retries": 2, "retry_delay": 300}
 
 
+def _resolve_year_month(**context) -> str:
+    # 1. Check if a manual override was passed in the trigger config
+    override = context["params"].get("year_month")
+    if override:
+        return override
+    
+    # 2. Otherwise, dynamically derive it from the logical scheduled date
+    # (A monthly schedule fires after the month ends, giving us the prior full month)
+    target_date = context["data_interval_start"]
+    return target_date.strftime("%Y%m")
+
 def _download_task(**context):
-    year_month = context["params"]["year_month"]
+    year_month = _resolve_year_month(**context)
     extracted = download_and_extract(year_month)
     return extracted  # goes to XCom
 
 
 def _upload_task(**context):
     extracted = context["ti"].xcom_pull(task_ids="download_and_extract")
-    year_month = context["params"]["year_month"]
+    year_month = _resolve_year_month(**context)
     upload_extracted_csvs(extracted, year_month)
 
 
 def _clean_task(**context):
-    year_month = context["params"]["year_month"]
+    year_month = _resolve_year_month(**context)
     year, month = year_month[:4], year_month[4:6]
     con = duckdb.connect()
     con.execute("INSTALL httpfs; LOAD httpfs;")
-    # Add these two lines to prevent out-of-memory kills
     con.execute("PRAGMA memory_limit='4GB';")
     con.execute("PRAGMA temp_directory='/tmp/duckdb_spill';")
     con.execute("""
@@ -47,10 +58,11 @@ def _clean_task(**context):
 with DAG(
     dag_id="citibike_batch_pipeline",
     start_date=datetime(2026, 6, 1),
-    schedule_interval="@monthly",
+    schedule_interval="17 14 21 * *",
     catchup=False,
     default_args=default_args,
-    params={"year_month": Param("202606", type="string")},
+    # Change the default param to None so automatic runs use data_interval_start
+    params={"year_month": Param(None, type=["null", "string"])},
     tags=["citibike", "batch"],
 ) as dag:
 
