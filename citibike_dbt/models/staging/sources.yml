@@ -8,7 +8,7 @@ sources:
             {% if target.name == 'ci' %}
               read_parquet('test_fixtures/sample_trips.parquet')
             {% else %}
-              read_parquet('s3://silver/citibike/tripdata/**/*.parquet', hive_partitioning=true)
+              read_parquet('s3://silver/citibike/**/*.parquet', hive_partitioning=true)
             {% endif %}
 
 # This YAML is basically giving a friendly name to your data in MinIO so dbt can refer to it easily.
@@ -20,5 +20,5 @@ sources:
 #         │
 #         └── points to
 #              ↓
-#         s3://silver/citibike/tripdata/**/*.parquet
+#         s3://silver/citibike/**/*.parquet
 
